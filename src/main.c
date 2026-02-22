@@ -4,18 +4,20 @@
 #include "input/input_impl.h"
 #include "screen/screen_impl.h"
 #include "rpg/game.h"
+#include "rpg/layout.h"
 
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *virtualTarget;
     bool running;
+    SDL_Gamepad *gamepad;
     Input input;
     Game game;
 } App;
 
-static const int virtualWidth = 320;
-static const int virtualHeight = 180;
+static const int virtualWidth = SCREEN_WIDTH;
+static const int virtualHeight = SCREEN_HEIGHT;
 
 static SDL_FRect computeLetterbox(int winW, int winH) {
     float scaleX = (float)winW / (float)virtualWidth;
@@ -42,6 +44,7 @@ static void toggleFullscreen(SDL_Window *window) {
 
 static void appInit(App *app) {
     inputInit(&app->input);
+    gameInit(&app->game);
 
     SDL_Rect bounds;
     SDL_GetDisplayUsableBounds(SDL_GetPrimaryDisplay(), &bounds);
@@ -50,7 +53,6 @@ static void appInit(App *app) {
     int winH = bounds.h * 3 / 4;
 
     app->window = SDL_CreateWindow("rpg", winW, winH, SDL_WINDOW_RESIZABLE);
-
     app->renderer = SDL_CreateRenderer(app->window, NULL);
 
     app->virtualTarget =
@@ -58,6 +60,7 @@ static void appInit(App *app) {
 
     SDL_SetTextureScaleMode(app->virtualTarget, SDL_SCALEMODE_NEAREST);
     SDL_SetRenderVSync(app->renderer, 1);
+    SDL_SetWindowFullscreen(app->window, true);
     app->running = true;
 }
 
@@ -66,7 +69,28 @@ static bool handleEvent(App *app, SDL_Event *event) {
         app->running = false;
         return true;
     }
+// --- NEW: Gamepad Connection Handling ---
+    if (event->type == SDL_EVENT_GAMEPAD_ADDED) {
+        // Only open the gamepad if we don't already have one connected
+        if (app->gamepad == NULL) {
+            app->gamepad = SDL_OpenGamepad(event->gdevice.which);
+            if (app->gamepad) {
+                SDL_Log("Gamepad connected!");
+            }
+        }
+        return true;
+    }
 
+    if (event->type == SDL_EVENT_GAMEPAD_REMOVED) {
+        // Check if the removed gamepad is the one we are currently using
+        if (app->gamepad && SDL_GetGamepadID(app->gamepad) == event->gdevice.which) {
+            SDL_CloseGamepad(app->gamepad);
+            app->gamepad = NULL;
+            SDL_Log("Gamepad disconnected!");
+        }
+        return true;
+    }
+    // ----------------------------------------
     if (event->type == SDL_EVENT_KEY_DOWN) {
         bool alt = (event->key.mod & SDL_KMOD_ALT) != 0;
 
@@ -96,20 +120,21 @@ static void appRun(App *app) {
             }
         }
 
-        game_update(&app->game, &app->input);
+        gameUpdate(&app->game, &app->input);
 
         /* Render to virtual texture */
         SDL_SetRenderTarget(app->renderer, app->virtualTarget);
         SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
         SDL_RenderClear(app->renderer);
 
-        game_render(&app->game, &screen);
+        gameRender(&app->game, &screen);
 
         /* Present to window */
         SDL_SetRenderTarget(app->renderer, NULL);
 
         int winW, winH;
-        SDL_GetWindowSize(app->window, &winW, &winH);
+        SDL_GetRenderOutputSize(app->renderer, &winW, &winH);
+        //SDL_GetWindowSize(app->window, &winW, &winH);
 
         SDL_SetRenderDrawColor(app->renderer, 0, 0, 0, 255);
         SDL_RenderClear(app->renderer);
@@ -124,6 +149,10 @@ static void appRun(App *app) {
 }
 
 void appClose(App *app) {
+    if (app->gamepad) {
+        SDL_CloseGamepad(app->gamepad);
+        app->gamepad = NULL;
+    }
     SDL_DestroyTexture(app->virtualTarget);
     SDL_DestroyRenderer(app->renderer);
     SDL_DestroyWindow(app->window);
@@ -133,7 +162,7 @@ int main(int argc, char **argv) {
     (void)argc;
     (void)argv;
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD) < 0) {
         SDL_Log("SDL init failed: %s", SDL_GetError());
         return 1;
     }
