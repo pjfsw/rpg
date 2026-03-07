@@ -111,11 +111,10 @@ int findSprite(Screen *screen, char *name) {
     return -1;
 }
 
-static void drawTexture(Screen *screen, SDL_Texture *texture, int x, int y) {
-    /* disable blending on the source texture */
-        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);            
-    //SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_NONE);
-
+static void drawTexture(Screen *screen, SDL_Texture *texture, int x, int y, uint8_t alpha) {
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureAlphaMod(texture, alpha);
+    
     SDL_FRect dst = { (float)x, (float)y, 0.0f, 0.0f };
 
     /* Query texture size so we can draw at native size */
@@ -127,12 +126,16 @@ static void drawTexture(Screen *screen, SDL_Texture *texture, int x, int y) {
     SDL_RenderTexture(screen->renderer, texture, NULL, &dst);    
 }
 
-void drawSprite(Screen *screen, int spriteIndex, int x, int y) {    /* draw onto the virtual target */
+int getSpriteHeight(Screen *screen, int spriteIndex) {
+    return 360;
+}
+
+void drawSprite(Screen *screen, int spriteIndex, int x, int y, uint8_t alpha) {    /* draw onto the virtual target */
     if ((spriteIndex < 0) || (spriteIndex >= MAX_SPRITE_DATA) || (screen->spriteData[spriteIndex] == 0)) {
         return;
     }
     SDL_Texture *sprite = screen->spriteData[spriteIndex];
-    drawTexture(screen, sprite, x, y);
+    drawTexture(screen, sprite, x, y, alpha);
 }
 
 void drawText(Screen *screen, char *text, int x, int y, uint32_t color) {
@@ -158,4 +161,12 @@ void resetClipRect(Screen *screen) {
 void setClipRect(Screen *screen, int x, int y, int w, int h) {
     SDL_Rect clip_area = { .x = x, .y = y, .w = w, .h = h };
     SDL_SetRenderClipRect(screen->renderer, &clip_area);    
+}
+
+int getFontWidth() {
+    return FONT_WIDTH * FONT_SCALE;
+}
+
+int getFontHeight() {
+    return FONT_SCALED_HEIGHT;    
 }

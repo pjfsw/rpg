@@ -6,8 +6,6 @@ static const unsigned char packed_font_data[] = {
     #embed "IBM_VGA_8x16.bin"
 };
 
-static const int font_height = 16;
-
 static SDL_Texture *textureCreate(SDL_Renderer *renderer, int w, int h) {
     return SDL_CreateTexture(
         renderer,
@@ -23,14 +21,14 @@ void fontInit(Font *font, SDL_Renderer *renderer) {
     uint32_t bg = 0x00000000;  // transparent or black
     uint32_t pixels[8*16];    // RGBA8888 output        
     for (int i = 0 ; i < 256; i++) {
-        for (int y = 0; y < font_height; y++) {
+        for (int y = 0; y < FONT_HEIGHT; y++) {
             uint8_t row = packed_font_data[i*16+y];
             for (int x = 0; x < 8; x++) {
                 int bit = (row >> (7 - x)) & 1;
                 pixels[y * 8 + x] = bit ? fg : bg;
             }
         }        
-        font->font[i] = textureCreate(renderer, 8, font_height);
+        font->font[i] = textureCreate(renderer, 8, FONT_HEIGHT);
         SDL_UpdateTexture(font->font[i], NULL, pixels, 8 * sizeof(uint32_t));
     }
 }
@@ -50,11 +48,12 @@ static void fontPutc(Font *font, uint8_t c, int x, int y, uint32_t color) {
     SDL_SetTextureColorMod(t, r, g, b);
     SDL_SetTextureAlphaMod(t, a);  // optional
     SDL_SetTextureBlendMode(t, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureScaleMode(t, SDL_SCALEMODE_PIXELART);
     SDL_FRect dst = {
         .x = x,
         .y = y,
-        .w = 8,
-        .h = font_height
+        .w = FONT_SCALE * FONT_WIDTH,
+        .h = FONT_SCALED_HEIGHT
     };
 
     SDL_RenderTexture(font->renderer, t, NULL, &dst);
@@ -62,6 +61,6 @@ static void fontPutc(Font *font, uint8_t c, int x, int y, uint32_t color) {
 
 inline void fontWrite(Font *font, char *str, int x, int y, uint32_t color) {
     for (int i = 0 ; i < strlen(str); i++) {
-        fontPutc(font, str[i], x + i * 8, y, color);
+        fontPutc(font, str[i], x + i * FONT_SCALE * FONT_WIDTH, y, color);
     } 
 }

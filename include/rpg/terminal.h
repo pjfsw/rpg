@@ -18,6 +18,8 @@ typedef struct {
     // For progressive rendering (typewriter effect)
     int charsRevealed; 
     int length;    
+    int height;
+    int spriteIndex;
 } TerminalEntry;
 
 #define MAX_TERMINAL_HISTORY 256

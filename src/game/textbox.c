@@ -60,7 +60,7 @@ void tbWrite(Textbox *textbox, char *text, Texttype texttype) {
             break;
         default:
     }
-    drawText(textbox->screen, text, textbox->xpos*8 + textbox->x, textbox->y+textbox->ypos*16, color);
+    drawText(textbox->screen, text, textbox->xpos*getFontWidth() + textbox->x, textbox->y+textbox->ypos*getFontHeight(), color);
     textbox->xpos += strlen(text)+1;
 }
 
@@ -75,10 +75,10 @@ void tbNewline(Textbox *textbox, int count) {
 }
 
 void tbDrawImage(Textbox *textbox, char *name) {
-    setClipRect(textbox->screen, 440, 0, textbox->w*8-440, SCREEN_HEIGHT);
+    setClipRect(textbox->screen, 440, 0, textbox->w*getFontWidth()-440, SCREEN_HEIGHT);
     int id = findSprite(textbox->screen, name);
     if (id >= 0) {
-        drawSprite(textbox->screen, id, 440, 0);
+        drawSprite(textbox->screen, id, 440, 0, 0xff);
     }
     resetClipRect(textbox->screen);
 }
