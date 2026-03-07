@@ -2,14 +2,84 @@
 #include <string.h>
 #include "rpg/game.h"
 #include "textbox.h"
+
 #define FADE_SPEED 32
+
+static void drawActionMapping(Terminal *terminal, ActionMapping *mapping) {
+    if ((mapping == NULL) || (mapping->action == NULL) || (mapping->button == NULL)) {
+        return;
+    }
+    termAddAction(terminal, mapping->button, mapping->action);
+}
+
+static void updateTerminal(Game *game) {
+    Room *room = worldGetRoom(game->roomId);
+    int y = 0;
+    if (room == NULL) {
+        char s[200];
+        snprintf(s, 200, "Unknown room id: %d", game->roomId);
+        return;
+    }
+    termAddImage(&game->terminal, "girl2");
+    for (int i = 0; i < room->desc_count; i++) {  
+        termAddText(&game->terminal, room->desc[i]); 
+    }
+    termAddText(&game->terminal, "");
+    for (int i = 0; i < game->actions.count; i++) {
+        drawActionMapping(&game->terminal, &game->actions.actions[i]);
+    }
+}
+
+static char *copyDirection(char *neighbor) {
+    if (neighbor == NULL) {
+        return NULL;
+    }
+    Room *room = worldFindRoom(neighbor);    
+    if (room == NULL) {
+        return NULL;
+    }
+    return room->name;
+}
+
+static void addAction(Game *game, char *button, char *action) {
+    if ((button == NULL) || (action == NULL)) {
+        return;
+    }
+    strncpy(game->actions.actions[game->actions.count].button, button, 3);
+    strncpy(game->actions.actions[game->actions.count].action, action, MAX_ACTION_LENGTH);
+    game->actions.count++;    
+}
+
+static void updateDirections(Game *game) {
+    Room *room = worldGetRoom(game->roomId);
+    if (room == NULL) {
+        return;
+    }
+    
+    addAction(game, "U", copyDirection(room->north));    
+    addAction(game, "D", copyDirection(room->south));
+    addAction(game, "L", copyDirection(room->west));
+    addAction(game, "R", copyDirection(room->east));
+}
+
+static void updateActions(Game *game) {
+    memset(&game->actions, 0, sizeof(Actions));
+    updateDirections(game);
+}
+
+static void newRoom(Game *game) {
+    updateActions(game);
+    updateTerminal(game);
+}
 
 static void newGame(Game *game) {
     game->gameState = GS_IN_GAME;
     game->roomId = 0;
+    newRoom(game);
 }
 
 void gameInit(Game *game) {
+    termInit(&game->terminal);
     worldLoad();
     newGame(game);
 }
@@ -20,6 +90,7 @@ static void handleMovement(Game *game, char *direction) {
     }
     Room *newRoom = worldFindRoom(direction);
     if (newRoom != NULL) {
+        termAddSection(&game->terminal);
         game->nextRoomId = newRoom->id;
         game->inGameState = IGS_FADE_OUT_ROOM;
     }
@@ -47,7 +118,7 @@ static void waitForPlayer(Game *game, Action action) {
     }
 }
 
-void fadeInRoom(Game *game) {
+static void fadeInRoom(Game *game) {
     game->fade += FADE_SPEED;
     if (game->fade > 255) {
         game->fade = 255;
@@ -57,7 +128,8 @@ void fadeInRoom(Game *game) {
     }
 }
 
-void fadeOutRoom(Game *game) {
+
+static void fadeOutRoom(Game *game) {
     if (game->fade > 0) {
         game->fade -= FADE_SPEED;
     } 
@@ -66,6 +138,7 @@ void fadeOutRoom(Game *game) {
     }
     if (game->fade == 0) {
         game->roomId = game->nextRoomId;
+        newRoom(game);
         game->inGameState = IGS_FADE_IN_ROOM;
     }
 }
@@ -89,84 +162,17 @@ static void inGameUpdate(Game *game, Input *input) {
     }
 }
 
-typedef char (*GetRoomDirectionFunc)(Room *room);
-
-inline char *getSouth(Room *room) {
-    return room->south;
-}
-
-char *copyDirection(char *neighbor) {
-    if (neighbor == NULL) {
-        return NULL;
-    }
-    Room *room = worldFindRoom(neighbor);    
-    if (room == NULL) {
-        return NULL;
-    }
-    return room->name;
-}
-
-void updateDirections(Game *game) {
-    memset(&game->directions, 0, sizeof(Directions));
-    Room *room = worldGetRoom(game->roomId);
-    if (room == NULL) {
-        return;
-    }
-    game->directions.north = copyDirection(room->north);
-    game->directions.south = copyDirection(room->south);
-    game->directions.west = copyDirection(room->west);
-    game->directions.east = copyDirection(room->east);
-}
-
-
 void gameUpdate(Game *game, Input *input) {
     if (game->gameState == GS_IN_GAME) {
         inGameUpdate(game, input);
     }
-    updateDirections(game);
-
-}
-
-static void drawCompass(Screen *screen, char *button, char *navi, int x, int y, uint32_t fade) {
-    int bx = x;// x + strlen(button) / 2;
-    drawText(screen, button, bx*8, y*16, 0x3366ffff);
-    if (navi != NULL) {
-        drawText(screen, navi, (x+strlen(button)+1)*8, y*16, 0xffffff00 | fade);
-        //int nx = bx - strlen(navi) / 2;
-        //drawText(screen, navi, nx, y + 1, 0xffffffff);
-    }
-}
-
-static void inGameRender(Game *game, Screen *screen) {
-    Textbox tb;
-    tbInit(&tb, screen, game->fade);
-
-    Room *room = worldGetRoom(game->roomId);
-    int y = 0;
-    if (room == NULL) {
-        char s[200];
-        snprintf(s, 200, "Unknown room id: %d", game->roomId);
-        tbWriteln(&tb, s, TT_ERROR);
-        return;
-    }
-
-    tbWriteln(&tb,  room->name, TT_HEADER);
-    tbNewline(&tb, 1);
-
-    for (int i = 0; i < room->desc_count; i++) {    
-        tbWriteln(&tb, room->desc[i], TT_TEXT);
-    }
-
-    int x = 51;
-    drawCompass(screen, "[U]", game->directions.north, x, y++, game->fade);
-    drawCompass(screen, "[L]", game->directions.west, x, y++, game->fade); 
-    drawCompass(screen, "[R]", game->directions.east, x, y++, game->fade);
-    drawCompass(screen, "[D]", game->directions.south, x, y++, game->fade);
 }
 
 void gameRender(Game *game, Screen *screen) {
     if (game->gameState == GS_IN_GAME) {
-        inGameRender(game, screen);
-    } else if (game->gameState == GS_MAIN_MENU) {
+        termUpdate(&game->terminal);
+        termUpdate(&game->terminal);    // 120 fps update
+        termRender(&game->terminal, screen);
+   } else if (game->gameState == GS_MAIN_MENU) {
     }
 }

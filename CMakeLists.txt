@@ -4,13 +4,16 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(SDL3 REQUIRED)
+find_package(SDL3_image REQUIRED)
 
 add_executable(rpg
     src/input/input.c
     src/screen/font.c
     src/screen/screen.c
+    src/screen/fileutil.c
     src/game/game.c
     src/game/textbox.c
+    src/game/terminal.c
     src/game/world.c
     src/main.c
     )
@@ -43,5 +46,4 @@ target_include_directories(inih PUBLIC
 )
 
 target_include_directories(rpg PRIVATE include)
-target_link_libraries(rpg PRIVATE SDL3::SDL3 inih)
-target_link_libraries(rpg PRIVATE SDL3::SDL3)
+target_link_libraries(rpg PRIVATE SDL3::SDL3 SDL3_image::SDL3_image inih)

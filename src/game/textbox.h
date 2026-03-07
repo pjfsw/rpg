@@ -7,7 +7,8 @@ typedef enum {
     TT_HEADER,
     TT_BUTTON,
     TT_NEIGHBOUR,
-    TT_ERROR
+    TT_ACTION,
+    TT_ERROR,
 } Texttype;
 
 typedef struct {
@@ -24,5 +25,5 @@ void tbInit(Textbox *textbox, Screen *screen, int fade);
 // void textboxDrawSprite
 void tbWrite(Textbox *textbox, char *text, Texttype texttype);
 void tbWriteln(Textbox *textbox, char *text, Texttype texttype);
-
+void tbDrawImage(Textbox *textbox, char *name);
 void tbNewline(Textbox *textbox, int count);

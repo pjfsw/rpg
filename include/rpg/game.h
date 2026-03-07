@@ -3,6 +3,7 @@
 #include "rpg/input.h"
 #include "rpg/screen.h"
 #include "rpg/world.h"
+#include "rpg/terminal.h"
 
 typedef enum {
     GS_MAIN_MENU = 0,
@@ -15,12 +16,17 @@ typedef enum {
     IGS_FADE_OUT_ROOM
 } InGameState;
 
+#define MAX_ACTION_LENGTH 256
 typedef struct {
-    char *north;
-    char *south;
-    char *east;
-    char *west;
-} Directions;
+    char button[4];
+    char action[MAX_ACTION_LENGTH];
+} ActionMapping;
+
+#define MAX_ACTIONS 16
+typedef struct {
+    ActionMapping actions[MAX_ACTIONS];
+    int count;
+} Actions;
 
 typedef struct {
     uint32_t fade;
@@ -30,7 +36,8 @@ typedef struct {
     World world;
     int roomId;
     int nextRoomId;
-    Directions directions;
+    Actions actions;
+    Terminal terminal;
 } Game;
 
 void gameInit(Game *game);

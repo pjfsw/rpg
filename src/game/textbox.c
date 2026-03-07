@@ -7,14 +7,17 @@
 #define TEXT_COLOR   0xeedd4400
 #define BUTTON_COLOR 0xffffffff
 #define NEIGHBOUR_COLOR 0x4488ff00
-#define FRAME_COLOR 0x112277ff
+#define FRAME_COLOR 0x5F574FFF
+#define ACTION_COLOR 0x773344ff
+
+static const int imageHeight = 128;
 
 void tbInit(Textbox *textbox, Screen *screen, int fade) {
     textbox->screen = screen;
 
-    textbox->y = 4;
-    textbox->x = 4;
-    textbox->w = 50;
+    textbox->y = 0;
+    textbox->x = 0;
+    textbox->w = 80;
 
     if (fade < 0) {
         textbox->fade = 0;
@@ -25,7 +28,7 @@ void tbInit(Textbox *textbox, Screen *screen, int fade) {
     }    
     textbox->xpos = 0;
     textbox->ypos = 0;
-    drawRect(screen, 0,0,50*8, SCREEN_HEIGHT, FRAME_COLOR);
+    //drawRect(screen, 0,imageHeight,textbox->w*8, SCREEN_HEIGHT-imageHeight, FRAME_COLOR);
 }
 
 // void textboxDrawSprite
@@ -52,6 +55,9 @@ void tbWrite(Textbox *textbox, char *text, Texttype texttype) {
         case TT_TEXT:
             color = TEXT_COLOR | textbox->fade;
             break;
+        case TT_ACTION:
+            color = ACTION_COLOR;
+            break;
         default:
     }
     drawText(textbox->screen, text, textbox->xpos*8 + textbox->x, textbox->y+textbox->ypos*16, color);
@@ -66,5 +72,14 @@ void tbWriteln(Textbox *textbox, char *text, Texttype texttype) {
 void tbNewline(Textbox *textbox, int count) {
     textbox->ypos+=count;
     textbox->xpos = 0;
+}
+
+void tbDrawImage(Textbox *textbox, char *name) {
+    setClipRect(textbox->screen, 440, 0, textbox->w*8-440, SCREEN_HEIGHT);
+    int id = findSprite(textbox->screen, name);
+    if (id >= 0) {
+        drawSprite(textbox->screen, id, 440, 0);
+    }
+    resetClipRect(textbox->screen);
 }
 
