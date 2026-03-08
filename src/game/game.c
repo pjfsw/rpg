@@ -49,6 +49,7 @@ static void addDirection(Game *game, char *direction, char *item) {
     }
     strcpy(game->directions.directions[game->directions.count], direction);
     strcat(game->directions.directions[game->directions.count], item);
+    strcat(game->directions.directions[game->directions.count], ".");
     game->directions.count++;    
 }
 
@@ -59,10 +60,10 @@ static void updateDirections(Game *game) {
         return;
     }
     
-    addDirection(game, "North is ", copyDirection(room->north));    
-    addDirection(game, "South is ", copyDirection(room->south));
-    addDirection(game, "West is ", copyDirection(room->west));
-    addDirection(game, "East is ", copyDirection(room->east));
+    addDirection(game, "To the north is ", copyDirection(room->north));    
+    addDirection(game, "To the south is ", copyDirection(room->south));
+    addDirection(game, "To the west is ", copyDirection(room->west));
+    addDirection(game, "To the east is ", copyDirection(room->east));
 }
 
 static void newRoom(Game *game) {

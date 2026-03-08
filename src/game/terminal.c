@@ -30,30 +30,52 @@ static void addText(Terminal *term, const char *text, TermEntryType type) {
 }
 
 void termAddText(Terminal *term, const char *text) {
-    if (strlen(text) == 0) {
+    int len = strlen(text);
+
+    if (len == 0) {
         addText(term, text, TERM_TEXT);
         return;
     }
-    char buf[100];
+
+    char buf[256];  // Increased to safely hold max lengths
     int start = 0;
-    const int maxLen = TERMINAL_WIDTH;
-    int lastSpace = 0;
-    for (int i = 0; i < strlen(text); i++) {
+    const int maxLen = TERMINAL_WIDTH;  // Assuming your terminal width
+    int lastSpace = -1;
+
+    for (int i = 0; i < len; i++) {
         if (text[i] == ' ') {
-            lastSpace = i+1;
+            lastSpace = i;
         }
-        if ((i-start)>maxLen) {
-            int chars = lastSpace-start;
-            strncpy(buf, &text[start], chars);
-            addText(term, buf, TERM_TEXT);
-            start = lastSpace;
-        }               
+
+        if ((i - start) >= maxLen) {
+            int chars;
+
+            // Normal case: we found a space to break at
+            if (lastSpace > start) {
+                chars = lastSpace - start;
+                strncpy(buf, &text[start], chars);
+                buf[chars] = '\0';  // Explicitly null-terminate
+                addText(term, buf, TERM_TEXT);
+
+                start = lastSpace + 1;  // Skip the space for the next line
+            }
+            // Edge case: word is longer than the whole line, force a cut
+            else {
+                chars = maxLen;
+                strncpy(buf, &text[start], chars);
+                buf[chars] = '\0';
+                addText(term, buf, TERM_TEXT);
+
+                start = i;
+            }
+        }
     }
-    int end = strlen(text);    
-    if (start < end) {
-        int chars = end-start;
-        memset(buf, 0, sizeof(buf));
+
+    // Flush the remaining characters
+    if (start < len) {
+        int chars = len - start;
         strncpy(buf, &text[start], chars);
+        buf[chars] = '\0';
         addText(term, buf, TERM_TEXT);
     }
 }
@@ -100,7 +122,7 @@ static void startAlphaFade(Terminal *term) {
 }
 
 static void updateAlpha(Terminal *term) {
-    const int fadeSpeed = 2;
+    const int fadeSpeed = 1;
     bool noFade = true;
     for (int i = 0; i < term->count; i++) {
         TerminalEntry *e = &term->entries[i];
