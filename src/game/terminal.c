@@ -18,6 +18,8 @@ static void addText(Terminal *term, const char *text, TermEntryType type) {
     strncpy(entry->content, text, MAX_TERMINAL_ENTRY_LENGTH);
     entry->length = strlen(entry->content);
     entry->type = type;    
+    entry->currentAlpha = 0xff;
+    entry->targetAlpha = 0xff;    
     if (term->count < MAX_TERMINAL_HISTORY) {
         term->count++;
     }
@@ -27,7 +29,6 @@ static void addText(Terminal *term, const char *text, TermEntryType type) {
 void termAddText(Terminal *term, const char *text) {
     addText(term, text, TERM_TEXT);
 }
-
 
 void termAddSection(Terminal *term) {
     addText(term, "---", TERM_SECTION);
@@ -47,9 +48,48 @@ void termAddImage(Terminal *term, const char *spriteName) {
     addText(term, spriteName, TERM_IMAGE);
 }
 
+static void startAlphaFade(Terminal *term) {
+    term->isTransitioning = false;
+
+    uint8_t idx = term->head;
+    int sectionsSeen = 0;
+
+    // Assign a dim target alpha to older sections
+    for (int i = 0; i < term->count; i++) {
+        idx--;
+        TerminalEntry *e = &term->entries[idx];
+
+        if (e->type == TERM_SECTION) {
+            sectionsSeen++;
+        }
+
+        if (sectionsSeen > 0) {
+            e->targetAlpha = 0x80;
+        }
+    }
+}
+
+static void updateAlpha(Terminal *term) {
+    const int fadeSpeed = 4;
+    for (int i = 0; i < term->count; i++) {
+        TerminalEntry *e = &term->entries[i];
+
+        if (e->currentAlpha > e->targetAlpha) {
+            // Subtract 5 per frame for a smooth fade without underflowing
+            if (e->currentAlpha - e->targetAlpha < fadeSpeed) {
+                e->currentAlpha = e->targetAlpha;
+            } else {
+                e->currentAlpha -= fadeSpeed;
+            }
+        }
+    }
+}
+
 void termUpdate(Terminal *term) {
-    if (term->revealPos == term->head) {
-        term->isTransitioning = false;        
+    if ((term->revealPos == term->head)) {
+        if (term->isTransitioning) {
+            startAlphaFade(term);
+        }
         return;
     }
     TerminalEntry *entry = &term->entries[term->revealPos];
@@ -66,6 +106,8 @@ void termUpdate(Terminal *term) {
             term->revealPos++;
         }
     }
+    
+    updateAlpha(term);
 }
 
 void termRender(Terminal *term, Screen *screen) {
@@ -73,27 +115,13 @@ void termRender(Terminal *term, Screen *screen) {
         return;
     }
 
-    int revealSection = 0;
-    if (term->isTransitioning) {
-        revealSection = 1;
-    }
-
     int h = SCREEN_HEIGHT;
     int rh = 0;
     uint8_t idx = term->head;
     int c = 0;
-    uint8_t alphaIndex = idx;
-    int sectionsSeen = 0;    
     while ((rh < h) && (c < term->count)) {
         idx--;
         TerminalEntry *e = &term->entries[idx];
-
-        if (e->type == TERM_SECTION) {
-            sectionsSeen++;
-        }
-        if (sectionsSeen <= revealSection) {
-            alphaIndex = idx;
-        }
 
         if (e->type == TERM_IMAGE) {
             int id = findSprite(screen, e->content);
@@ -120,12 +148,9 @@ void termRender(Terminal *term, Screen *screen) {
     const int x = (SCREEN_WIDTH-78*getFontWidth())/2;
         
     int y = SCREEN_HEIGHT-rh;
-    uint8_t alpha = 0x80;
     for (int i = 0; i < c; i++) {
         TerminalEntry *e = &term->entries[idx];
-        if (idx == alphaIndex) {
-            alpha = 0xff;
-        }
+        uint8_t alpha = e->currentAlpha;
         if (e->type == TERM_IMAGE) {
             if (e->spriteIndex >= 0) {            
                 drawSprite(screen, e->spriteIndex, x, y, alpha);

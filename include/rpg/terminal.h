@@ -22,6 +22,8 @@ typedef struct {
     int targetHeight; // Stores the full size of the sprite    
     int height;
     int spriteIndex;
+    uint8_t currentAlpha; // the active alpha rendered on screen
+    uint8_t targetAlpha;  // the alpha we want to fade towards    
 } TerminalEntry;
 
 #define MAX_TERMINAL_HISTORY 256
