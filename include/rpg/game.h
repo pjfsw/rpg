@@ -11,9 +11,8 @@ typedef enum {
 } GameState;
 
 typedef enum {
-    IGS_FADE_IN_ROOM=0,
-    IGS_PLAYER_INPUT,
-    IGS_FADE_OUT_ROOM
+    IGS_LOAD_NEXT_ACTION=0,
+    IGS_PLAYER_INPUT
 } InGameState;
 
 #define MAX_ACTION_LENGTH 256
@@ -29,13 +28,11 @@ typedef struct {
 } Actions;
 
 typedef struct {
-    uint32_t fade;
     InGameState inGameState;
     GameState gameState;
     int x;
     World world;
     int roomId;
-    int nextRoomId;
     Actions actions;
     Terminal terminal;
 } Game;

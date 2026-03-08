@@ -34,6 +34,7 @@ TerminalEntry entries[MAX_TERMINAL_HISTORY];
     int count;         // Current number of valid entries (up to MAX_TERMINAL_HISTORY)
     uint8_t revealPos;
     bool isTransitioning;
+    bool terminalBusy;
 } Terminal;
 
 void termInit(Terminal *term);
@@ -44,3 +45,4 @@ void termAddImage(Terminal *term, const char *spriteName);
 void termUpdate(Terminal *term);
 void termRender(Terminal *term, Screen *screen);
 void termScroll(Terminal *term, int amount);
+bool termReady(Terminal *term);

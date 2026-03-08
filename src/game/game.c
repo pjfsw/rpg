@@ -20,7 +20,7 @@ static void updateTerminal(Game *game) {
         snprintf(s, 200, "Unknown room id: %d", game->roomId);
         return;
     }
-    if (room->background != NULL) {
+    if (strlen(room->background) > 0) {
         termAddImage(&game->terminal, room->background);
     }
     for (int i = 0; i < room->desc_count; i++) {  
@@ -90,11 +90,12 @@ static void handleMovement(Game *game, char *direction) {
     if (direction == NULL) {
         return;
     }
-    Room *newRoom = worldFindRoom(direction);
-    if (newRoom != NULL) {
+    Room *nextRoom = worldFindRoom(direction);
+    if (nextRoom != NULL) {
         termAddSection(&game->terminal);
-        game->nextRoomId = newRoom->id;
-        game->inGameState = IGS_FADE_OUT_ROOM;
+        game->roomId = nextRoom->id;
+        newRoom(game);
+        game->inGameState = IGS_LOAD_NEXT_ACTION;
     }
 }
 
@@ -120,28 +121,9 @@ static void waitForPlayer(Game *game, Action action) {
     }
 }
 
-static void fadeInRoom(Game *game) {
-    game->fade += FADE_SPEED;
-    if (game->fade > 255) {
-        game->fade = 255;
-    }
-    if (game->fade == 255) {
+static void waitForTransition(Game *game) {
+    if (termReady(&game->terminal)) {
         game->inGameState = IGS_PLAYER_INPUT;
-    }
-}
-
-
-static void fadeOutRoom(Game *game) {
-    if (game->fade > 0) {
-        game->fade -= FADE_SPEED;
-    } 
-    if (game->fade > 255) {
-        game->fade = 0;
-    }
-    if (game->fade == 0) {
-        game->roomId = game->nextRoomId;
-        newRoom(game);
-        game->inGameState = IGS_FADE_IN_ROOM;
     }
 }
 
@@ -151,14 +133,11 @@ static void inGameUpdate(Game *game, Input *input) {
         // Go to menu
     } else {
         switch (game->inGameState) {
-            case IGS_FADE_IN_ROOM:
-                fadeInRoom(game);
+            case IGS_LOAD_NEXT_ACTION:
+                waitForTransition(game);
                 break;
             case IGS_PLAYER_INPUT:
                 waitForPlayer(game, action);
-                break;
-            case IGS_FADE_OUT_ROOM:
-                fadeOutRoom(game);
                 break;
         }
     }

@@ -23,6 +23,7 @@ static void addText(Terminal *term, const char *text, TermEntryType type) {
     if (term->count < MAX_TERMINAL_HISTORY) {
         term->count++;
     }
+    term->terminalBusy = true;
     term->head++;
 }
 
@@ -36,6 +37,10 @@ void termAddSection(Terminal *term) {
     term->isTransitioning = true;    
 }
 
+bool termReady(Terminal *term) {
+    return (term->revealPos == term->head) && (!term->terminalBusy);
+}
+
 void termAddAction(Terminal *term, const char *button, const char *action) {
     char s[MAX_TERMINAL_ENTRY_LENGTH];
     strcpy(s, button);
@@ -45,6 +50,7 @@ void termAddAction(Terminal *term, const char *button, const char *action) {
 }
 
 void termAddImage(Terminal *term, const char *spriteName) {
+    printf("ADD IMAGE %s\n", spriteName);
     addText(term, spriteName, TERM_IMAGE);
 }
 
@@ -71,6 +77,7 @@ static void startAlphaFade(Terminal *term) {
 
 static void updateAlpha(Terminal *term) {
     const int fadeSpeed = 4;
+    bool noFade = true;
     for (int i = 0; i < term->count; i++) {
         TerminalEntry *e = &term->entries[i];
 
@@ -78,10 +85,14 @@ static void updateAlpha(Terminal *term) {
             // Subtract 5 per frame for a smooth fade without underflowing
             if (e->currentAlpha - e->targetAlpha < fadeSpeed) {
                 e->currentAlpha = e->targetAlpha;
+                noFade = false;
             } else {
                 e->currentAlpha -= fadeSpeed;
             }
         }
+    }
+    if (noFade) {
+        term->terminalBusy = false;
     }
 }
 
@@ -89,6 +100,8 @@ void termUpdate(Terminal *term) {
     if ((term->revealPos == term->head)) {
         if (term->isTransitioning) {
             startAlphaFade(term);
+        } else {
+            updateAlpha(term);
         }
         return;
     }
@@ -105,9 +118,7 @@ void termUpdate(Terminal *term) {
         } else {
             term->revealPos++;
         }
-    }
-    
-    updateAlpha(term);
+    }   
 }
 
 void termRender(Terminal *term, Screen *screen) {
