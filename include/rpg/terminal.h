@@ -6,7 +6,7 @@
 typedef enum {
     TERM_TEXT,
     TERM_SECTION,
-    TERM_ACTION,
+    TERM_DIRECTION,
     TERM_IMAGE
 } TermEntryType;
 
@@ -40,7 +40,7 @@ TerminalEntry entries[MAX_TERMINAL_HISTORY];
 void termInit(Terminal *term);
 void termAddSection(Terminal *term);
 void termAddText(Terminal *term, const char *text);
-void termAddAction(Terminal *term, const char *button, const char *action);
+void termAddDirection(Terminal *term, const char *direction);
 void termAddImage(Terminal *term, const char *spriteName);
 void termUpdate(Terminal *term);
 void termRender(Terminal *term, Screen *screen);

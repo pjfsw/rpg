@@ -15,17 +15,10 @@ typedef enum {
     IGS_PLAYER_INPUT
 } InGameState;
 
-#define MAX_ACTION_LENGTH 256
 typedef struct {
-    char button[4];
-    char action[MAX_ACTION_LENGTH];
-} ActionMapping;
-
-#define MAX_ACTIONS 16
-typedef struct {
-    ActionMapping actions[MAX_ACTIONS];
+    char directions[4][256];
     int count;
-} Actions;
+} Directions;
 
 typedef struct {
     InGameState inGameState;
@@ -33,7 +26,7 @@ typedef struct {
     int x;
     World world;
     int roomId;
-    Actions actions;
+    Directions directions;
     Terminal terminal;
 } Game;
 

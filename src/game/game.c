@@ -5,11 +5,11 @@
 
 #define FADE_SPEED 32
 
-static void drawActionMapping(Terminal *terminal, ActionMapping *mapping) {
-    if ((mapping == NULL) || (mapping->action == NULL) || (mapping->button == NULL)) {
+static void drawDirection(Terminal *terminal, char direction[]) {
+    if (strlen(direction) == 0) {
         return;
     }
-    termAddAction(terminal, mapping->button, mapping->action);
+    termAddDirection(terminal, direction);
 }
 
 static void updateTerminal(Game *game) {
@@ -27,8 +27,8 @@ static void updateTerminal(Game *game) {
         termAddText(&game->terminal, room->desc[i]); 
     }
     termAddText(&game->terminal, "");
-    for (int i = 0; i < game->actions.count; i++) {
-        drawActionMapping(&game->terminal, &game->actions.actions[i]);
+    for (int i = 0; i < game->directions.count; i++) {
+        drawDirection(&game->terminal, game->directions.directions[i]);
     }
 }
 
@@ -43,34 +43,30 @@ static char *copyDirection(char *neighbor) {
     return room->name;
 }
 
-static void addAction(Game *game, char *button, char *action) {
-    if ((button == NULL) || (action == NULL)) {
+static void addDirection(Game *game, char *direction, char *item) {
+    if ((direction == NULL) || (item == NULL)) {
         return;
     }
-    strncpy(game->actions.actions[game->actions.count].button, button, 3);
-    strncpy(game->actions.actions[game->actions.count].action, action, MAX_ACTION_LENGTH);
-    game->actions.count++;    
+    strcpy(game->directions.directions[game->directions.count], direction);
+    strcat(game->directions.directions[game->directions.count], item);
+    game->directions.count++;    
 }
 
 static void updateDirections(Game *game) {
+    memset(&game->directions, 0, sizeof(Directions));
     Room *room = worldGetRoom(game->roomId);
     if (room == NULL) {
         return;
     }
     
-    addAction(game, "U", copyDirection(room->north));    
-    addAction(game, "D", copyDirection(room->south));
-    addAction(game, "L", copyDirection(room->west));
-    addAction(game, "R", copyDirection(room->east));
-}
-
-static void updateActions(Game *game) {
-    memset(&game->actions, 0, sizeof(Actions));
-    updateDirections(game);
+    addDirection(game, "North is ", copyDirection(room->north));    
+    addDirection(game, "South is ", copyDirection(room->south));
+    addDirection(game, "West is ", copyDirection(room->west));
+    addDirection(game, "East is ", copyDirection(room->east));
 }
 
 static void newRoom(Game *game) {
-    updateActions(game);
+    updateDirections(game);
     updateTerminal(game);
 }
 

@@ -5,8 +5,8 @@
 #include <stdbool.h>
 
 static const int textColor = 0xbfc4cfff;
-static const int actionColor = 0x7bb3ffff;
-static const int sectionColor = 0x222222ff;
+static const int directionColor = 0x7bb3ffff;
+static const int sectionColor = 0x333333ff;
 
 void termInit(Terminal *term) {
     memset(term, 0, sizeof(Terminal));
@@ -41,13 +41,10 @@ bool termReady(Terminal *term) {
     return (term->revealPos == term->head) && (!term->terminalBusy);
 }
 
-void termAddAction(Terminal *term, const char *button, const char *action) {
-    char s[MAX_TERMINAL_ENTRY_LENGTH];
-    strcpy(s, button);
-    strcat(s, " ");
-    strncat(s, action, MAX_TERMINAL_ENTRY_LENGTH-strlen(s));
-    addText(term, s, TERM_ACTION);
+void termAddDirection(Terminal *term, const char *direction) {
+    addText(term, direction, TERM_DIRECTION);
 }
+
 
 void termAddImage(Terminal *term, const char *spriteName) {
     printf("ADD IMAGE %s\n", spriteName);
@@ -76,7 +73,7 @@ static void startAlphaFade(Terminal *term) {
 }
 
 static void updateAlpha(Terminal *term) {
-    const int fadeSpeed = 4;
+    const int fadeSpeed = 2;
     bool noFade = true;
     for (int i = 0; i < term->count; i++) {
         TerminalEntry *e = &term->entries[i];
@@ -97,12 +94,11 @@ static void updateAlpha(Terminal *term) {
 }
 
 void termUpdate(Terminal *term) {
+    if (term->isTransitioning) {
+        startAlphaFade(term);
+    }
+    updateAlpha(term);
     if ((term->revealPos == term->head)) {
-        if (term->isTransitioning) {
-            startAlphaFade(term);
-        } else {
-            updateAlpha(term);
-        }
         return;
     }
     TerminalEntry *entry = &term->entries[term->revealPos];
@@ -141,7 +137,7 @@ void termRender(Terminal *term, Screen *screen) {
 
                 if (e->height < e->targetHeight) {
                     // Increase by 4 pixels per frame (adjust for speed)
-                    e->height += 8;
+                    e->height += 16;
 
                     if (e->height > e->targetHeight) {
                         e->height = e->targetHeight;
@@ -159,6 +155,9 @@ void termRender(Terminal *term, Screen *screen) {
     const int x = (SCREEN_WIDTH-78*getFontWidth())/2;
         
     int y = SCREEN_HEIGHT-rh;
+    if (y > 0) {
+        y = 0;
+    }
     for (int i = 0; i < c; i++) {
         TerminalEntry *e = &term->entries[idx];
         uint8_t alpha = e->currentAlpha;
@@ -172,8 +171,8 @@ void termRender(Terminal *term, Screen *screen) {
                 case TERM_TEXT:
                     color = textColor;
                     break;
-                case TERM_ACTION:
-                    color = actionColor;
+                case TERM_DIRECTION:
+                    color = directionColor;
                     break;
                 case TERM_SECTION:
                     color = sectionColor;
