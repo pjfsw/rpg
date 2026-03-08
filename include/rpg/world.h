@@ -9,7 +9,7 @@ typedef struct {
     char east[ROOMID_LENGTH];
     char west[ROOMID_LENGTH];    
     char name[80];    
-    char desc[8][80];
+    char desc[8][256];
     int desc_count;
     char background[200];
 } Room;

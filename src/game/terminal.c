@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#define TERMINAL_WIDTH 60
+
 static const int textColor = 0xbfc4cfff;
 static const int directionColor = 0x7bb3ffff;
 static const int sectionColor = 0x333333ff;
@@ -28,7 +30,32 @@ static void addText(Terminal *term, const char *text, TermEntryType type) {
 }
 
 void termAddText(Terminal *term, const char *text) {
-    addText(term, text, TERM_TEXT);
+    if (strlen(text) == 0) {
+        addText(term, text, TERM_TEXT);
+        return;
+    }
+    char buf[100];
+    int start = 0;
+    const int maxLen = TERMINAL_WIDTH;
+    int lastSpace = 0;
+    for (int i = 0; i < strlen(text); i++) {
+        if (text[i] == ' ') {
+            lastSpace = i+1;
+        }
+        if ((i-start)>maxLen) {
+            int chars = lastSpace-start;
+            strncpy(buf, &text[start], chars);
+            addText(term, buf, TERM_TEXT);
+            start = lastSpace;
+        }               
+    }
+    int end = strlen(text);    
+    if (start < end) {
+        int chars = end-start;
+        memset(buf, 0, sizeof(buf));
+        strncpy(buf, &text[start], chars);
+        addText(term, buf, TERM_TEXT);
+    }
 }
 
 void termAddSection(Terminal *term) {
@@ -67,7 +94,7 @@ static void startAlphaFade(Terminal *term) {
         }
 
         if (sectionsSeen > 0) {
-            e->targetAlpha = 0x80;
+            e->targetAlpha = 0x60;
         }
     }
 }
@@ -152,7 +179,7 @@ void termRender(Terminal *term, Screen *screen) {
         rh += e->height;
         c++;
     }
-    const int x = (SCREEN_WIDTH-78*getFontWidth())/2;
+    const int x = (SCREEN_WIDTH-TERMINAL_WIDTH*getFontWidth())/2;
         
     int y = SCREEN_HEIGHT-rh;
     if (y > 0) {
