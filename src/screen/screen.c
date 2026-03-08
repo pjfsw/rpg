@@ -48,6 +48,8 @@ static int loadTexturesFromFolder(
         if (SDL_strcasestr(filename, ".png") || 
             SDL_strcasestr(filename, ".jpg") || 
             SDL_strcasestr(filename, ".jpeg")) {
+                
+            printf("Loading %s\n", filename);
 
             // Construct the full path
             char fullPath[1024];
@@ -127,7 +129,12 @@ static void drawTexture(Screen *screen, SDL_Texture *texture, int x, int y, uint
 }
 
 int getSpriteHeight(Screen *screen, int spriteIndex) {
-    return 360;
+    if ((spriteIndex < 0) || (spriteIndex >= screen->spriteCount)) {
+        return 0;
+    }
+    float w = 0.0f, h = 0.0f;
+    SDL_GetTextureSize(screen->spriteData[spriteIndex] , &w, &h);
+    return h;
 }
 
 void drawSprite(Screen *screen, int spriteIndex, int x, int y, uint8_t alpha) {    /* draw onto the virtual target */

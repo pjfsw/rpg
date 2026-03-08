@@ -32,6 +32,7 @@ void termAddText(Terminal *term, const char *text) {
 void termAddSection(Terminal *term) {
     addText(term, "---", TERM_SECTION);
     addText(term, "", TERM_TEXT);
+    term->isTransitioning = true;    
 }
 
 void termAddAction(Terminal *term, const char *button, const char *action) {
@@ -47,19 +48,22 @@ void termAddImage(Terminal *term, const char *spriteName) {
 }
 
 void termUpdate(Terminal *term) {
-    TerminalEntry *entry = &term->entries[term->revealPos];
-    while ((term->revealPos != term->head) && term->entries[term->revealPos].type == TERM_IMAGE) {
-        term->revealPos++;
+    if (term->revealPos == term->head) {
+        term->isTransitioning = false;        
+        return;
     }
-    if (entry->charsRevealed >= entry->length) {
-        if (term->revealPos != term->head) {
+    TerminalEntry *entry = &term->entries[term->revealPos];
+
+    if (entry->type == TERM_IMAGE) {
+        if ((entry->targetHeight > 0) && (entry->height >= entry->targetHeight)) {
             term->revealPos++;
         }
-    }
-    if ((entry->type != TERM_IMAGE) && term->revealPos != term->head) {
+    } else {
         if (entry->charsRevealed < entry->length) {
             entry->charsRevealed++;
             strncpy(entry->actual, entry->content, entry->charsRevealed);
+        } else {
+            term->revealPos++;
         }
     }
 }
@@ -68,30 +72,48 @@ void termRender(Terminal *term, Screen *screen) {
     if (term->count == 0) {
         return;
     }
+
+    int revealSection = 0;
+    if (term->isTransitioning) {
+        revealSection = 1;
+    }
+
     int h = SCREEN_HEIGHT;
     int rh = 0;
     uint8_t idx = term->head;
     int c = 0;
-    bool nextSection = false;
     uint8_t alphaIndex = idx;
+    int sectionsSeen = 0;    
     while ((rh < h) && (c < term->count)) {
         idx--;
         TerminalEntry *e = &term->entries[idx];
+
         if (e->type == TERM_SECTION) {
-            nextSection = true;            
-        }        
-        if (!nextSection) {
+            sectionsSeen++;
+        }
+        if (sectionsSeen <= revealSection) {
             alphaIndex = idx;
         }
+
         if (e->type == TERM_IMAGE) {
-            int id = findSprite(screen, e->content);            
+            int id = findSprite(screen, e->content);
             if (id >= 0) {
-                e->height = getSpriteHeight(screen, id); // TODO precalc!! 
+                e->targetHeight = getSpriteHeight(screen, id);
+
+                if (e->height < e->targetHeight) {
+                    // Increase by 4 pixels per frame (adjust for speed)
+                    e->height += 8;
+
+                    if (e->height > e->targetHeight) {
+                        e->height = e->targetHeight;
+                    }
+                }
             }
             e->spriteIndex = id;
         } else {
             e->height = getFontHeight();
         }
+
         rh += e->height;
         c++;
     }

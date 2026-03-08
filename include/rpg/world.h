@@ -11,6 +11,7 @@ typedef struct {
     char name[80];    
     char desc[8][80];
     int desc_count;
+    char background[200];
 } Room;
 
 typedef struct {

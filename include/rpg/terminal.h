@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rpg/screen.h"
+#include <stdbool.h>
 
 typedef enum {
     TERM_TEXT,
@@ -18,6 +19,7 @@ typedef struct {
     // For progressive rendering (typewriter effect)
     int charsRevealed; 
     int length;    
+    int targetHeight; // Stores the full size of the sprite    
     int height;
     int spriteIndex;
 } TerminalEntry;
@@ -29,6 +31,7 @@ TerminalEntry entries[MAX_TERMINAL_HISTORY];
     uint8_t head;          // The index where the next entry will be inserted
     int count;         // Current number of valid entries (up to MAX_TERMINAL_HISTORY)
     uint8_t revealPos;
+    bool isTransitioning;
 } Terminal;
 
 void termInit(Terminal *term);

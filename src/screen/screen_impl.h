@@ -10,7 +10,7 @@ struct Screen {
     SDL_Renderer *renderer;
     SDL_Texture *target;
     SDL_Texture *spriteData[MAX_SPRITE_DATA];
-    char spriteName[MAX_SPRITE_NAME][MAX_SPRITE_DATA];
+    char spriteName[MAX_SPRITE_NAME][MAX_SPRITE_DATA];    
     int spriteCount;
     Font font;
 };

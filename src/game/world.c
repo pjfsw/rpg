@@ -43,6 +43,8 @@ static int iniHandler(void *user, const char *section, const char *name, const c
         strncpy(r->desc[r->desc_count++], value, sizeof(r->desc[0]) - 1);
     } else if (strcmp(name, "name") == 0) {
         strncpy(r->name, value, sizeof(r->name)-1);
+    } else if (strcmp(name, "bg") == 0) {
+        strncpy(r->background, value, sizeof(r->background)-1);
     }
 
     return 1; // unknown keys ignored for now    

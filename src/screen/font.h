@@ -8,7 +8,7 @@ typedef struct {
 } Font;
 
 #define FONT_HEIGHT 16
-#define FONT_SCALE 2
+#define FONT_SCALE 1
 #define FONT_SCALED_HEIGHT (FONT_HEIGHT*FONT_SCALE)
 #define FONT_WIDTH 8
 

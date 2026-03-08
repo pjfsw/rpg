@@ -20,7 +20,9 @@ static void updateTerminal(Game *game) {
         snprintf(s, 200, "Unknown room id: %d", game->roomId);
         return;
     }
-    termAddImage(&game->terminal, "girl2");
+    if (room->background != NULL) {
+        termAddImage(&game->terminal, room->background);
+    }
     for (int i = 0; i < room->desc_count; i++) {  
         termAddText(&game->terminal, room->desc[i]); 
     }
